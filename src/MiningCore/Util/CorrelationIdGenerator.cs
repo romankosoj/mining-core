@@ -4,7 +4,7 @@
 using System;
 using System.Threading;
 
-namespace LibUvManaged
+namespace MiningCore.Util
 {
     public static class CorrelationIdGenerator
     {
