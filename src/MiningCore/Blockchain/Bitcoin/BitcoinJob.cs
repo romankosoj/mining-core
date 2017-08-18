@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
-using CodeContracts;
 using MiningCore.Blockchain.Bitcoin.DaemonResponses;
 using MiningCore.Configuration;
 using MiningCore.Crypto;
@@ -14,6 +13,7 @@ using MiningCore.Stratum;
 using MiningCore.Util;
 using NBitcoin;
 using NBitcoin.DataEncoders;
+using Contract = MiningCore.Contracts.Contract;
 
 namespace MiningCore.Blockchain.Bitcoin
 {
@@ -278,7 +278,7 @@ namespace MiningCore.Blockchain.Bitcoin
                     Percentage = 0.2m
                 });
 
-            foreach (var recipient in rewardRecipients)
+            foreach (var recipient in rewardRecipients.Where(x => x.Percentage > 0))
             {
                 var recipientAddress = BitcoinUtils.AddressToScript(recipient.Address);
                 var recipientReward = new Money((long) Math.Floor(recipient.Percentage / 100.0m * reward.Satoshi));

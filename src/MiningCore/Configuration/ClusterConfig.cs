@@ -71,6 +71,7 @@ namespace MiningCore.Configuration
     public class PoolEndpoint
     {
         public string ListenAddress { get; set; }
+        public string Name { get; set; }
         public double Difficulty { get; set; }
         public VarDiffConfig VarDiff { get; set; }
     }
@@ -85,7 +86,7 @@ namespace MiningCore.Configuration
         /// <summary>
         ///     Network difficulty will be used if it is lower than this
         /// </summary>
-        public double MaxDiff { get; set; }
+        public double? MaxDiff { get; set; }
 
         /// <summary>
         ///     Try to get 1 share per this many seconds
@@ -152,7 +153,8 @@ namespace MiningCore.Configuration
 
     public class ApiConfig
     {
-        public string Address { get; set; }
+        public bool Enabled { get; set; }
+        public string ListenAddress { get; set; }
         public int Port { get; set; }
     }
 

@@ -1,7 +1,7 @@
 ﻿using System;
-using CodeContracts;
 using MiningCore.Configuration;
 using MiningCore.Util;
+using Contract = MiningCore.Contracts.Contract;
 
 namespace MiningCore.VarDiff
 {
@@ -26,7 +26,7 @@ namespace MiningCore.VarDiff
         private readonly VarDiffConfig options;
         private readonly double tMax;
         private readonly double tMin;
-        private double maxDiff;
+        private double? maxDiff;
 
         public double? Update(VarDiffContext ctx, double difficulty, double networkDifficulty)
         {
@@ -34,7 +34,7 @@ namespace MiningCore.VarDiff
 
             lock (ctx)
             {
-                maxDiff = networkDifficulty > maxDiff ? options.MaxDiff : networkDifficulty;
+                maxDiff = maxDiff.HasValue && networkDifficulty > maxDiff ? options.MaxDiff : networkDifficulty;
 
                 var ts = (DateTimeOffset.Now.ToUnixTimeMilliseconds() / 1000) | 0;
 
@@ -69,7 +69,7 @@ namespace MiningCore.VarDiff
                     var diffMax = maxDiff;
 
                     if (ddiff * difficulty > diffMax)
-                        ddiff = diffMax / difficulty;
+                        ddiff = diffMax.Value / difficulty;
                 }
 
                 else

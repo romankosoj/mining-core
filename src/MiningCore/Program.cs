@@ -1,11 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Features.Metadata;
@@ -30,6 +35,7 @@ namespace MiningCore
 {
     internal class Program
     {
+        private static readonly CancellationTokenSource cts = new CancellationTokenSource();
         private static ILogger logger;
         private static IContainer container;
         private static CommandOption dumpConfigOption;
@@ -67,10 +73,9 @@ namespace MiningCore
 
                 if (!shareRecoveryOption.HasValue())
                 {
-                    Start().Wait();
-
                     Console.CancelKeyPress += OnCancelKeyPress;
-                    Console.ReadLine();
+
+                    Start().Wait(cts.Token);
                 }
 
                 else
@@ -104,6 +109,11 @@ namespace MiningCore
                 Console.WriteLine("Cluster cannot start. Good Bye!");
             }
 
+            catch (OperationCanceledException)
+            {
+                // Ctrl+C
+            }
+
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
@@ -115,6 +125,9 @@ namespace MiningCore
         private static void OnCancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             logger.Info(() => "SIGINT received. Exiting.");
+
+            cts.Cancel();
+            Process.GetCurrentProcess().Close();
         }
 
         private static void DumpParsedConfig(ClusterConfig config)
@@ -468,8 +481,11 @@ namespace MiningCore
             shareRecorder.Start(clusterConfig);
 
             // start API
-            apiServer = container.Resolve<ApiServer>();
-            apiServer.Start(clusterConfig);
+            if (clusterConfig.Api == null || clusterConfig.Api.Enabled)
+            {
+                apiServer = container.Resolve<ApiServer>();
+                apiServer.Start(clusterConfig);
+            }
 
             // start pools in parallel
             await Task.WhenAll(clusterConfig.Pools.Where(x => x.Enabled).Select(async poolConfig =>
@@ -496,6 +512,9 @@ namespace MiningCore
 
                 payoutProcessor.Start();
             }
+
+            // keep running
+            await Observable.Never<Unit>().ToTask();
         }
 
         private static void RecoverShares(string recoveryFilename)

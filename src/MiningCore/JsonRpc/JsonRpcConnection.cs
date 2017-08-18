@@ -5,10 +5,10 @@ using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Text;
-using CodeContracts;
 using NetUV.Core.Handles;
 using Newtonsoft.Json;
 using NLog;
+using Contract = MiningCore.Contracts.Contract;
 
 // http://www.jsonrpc.org/specification
 // https://github.com/Astn/JSON-RPC.NET
@@ -49,18 +49,20 @@ namespace MiningCore.JsonRpc
 
                         if (!string.IsNullOrEmpty(data))
                         {
-                            sb.Append(data);
-
-                            if (sb.Length < MaxRequestLength)
+                            // flood-prevention check
+                            if (sb.Length + data.Length < MaxRequestLength)
                             {
-                                int index;
+                                sb.Append(data);
 
-                                while ((index = sb.ToString().IndexOf('\n')) != -1)
+                                // scan for lines and emit
+                                int index;
+                                while (sb.Length > 0 && (index = sb.ToString().IndexOf('\n')) != -1)
                                 {
-                                    var line = sb.ToString(0, index);
+                                    var line = sb.ToString(0, index).Trim();
                                     sb.Remove(0, index + 1);
 
-                                    observer.OnNext(line);
+                                    if(line.Length > 0)
+                                        observer.OnNext(line);
                                 }
                             }
 
@@ -86,12 +88,9 @@ namespace MiningCore.JsonRpc
 
                         upstream.Dispose();
                     });
-                })
-                .Publish()
-                .RefCount();
+                });
 
             Received = incomingLines
-                .Where(line => line.Length > 0) // ignore empty lines
                 .Select(line => new
                 {
                     Json = line,
