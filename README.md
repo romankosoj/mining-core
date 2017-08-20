@@ -16,3 +16,7 @@ Mining Core is a multi-currency mining pool engine.
 ## Requirements
 
 - .Net Core 2.0
+
+### Pools running on MiningCore
+
+- [poolmining.org](https://poolmining.org)
